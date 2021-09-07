@@ -286,17 +286,19 @@
 
           table.render({
               elem: '#test'
-              ,url:'/demo/data/'
+              ,url:'/bill/list/'
               ,cellMinWidth: 80 //全局定义常规单元格的最小宽度，layui 2.2.1 新增
+              ,page:true
               ,cols: [[
-                  {field:'transObjName', width:80, title: '交易对象', sort: true}
+                  {field:'transObjName', width:80, title: '交易对象'}
                   ,{field:'transItemName', width:80, title: '交易商品'}
-                  ,{field:'transMoneyCount', width:80, title: '交易金额', sort: true}
-                  ,{field:'transDirection', width:80, title: '交易方向'}
-                  ,{field:'transStateDesc', title: '交易状态描述', width: '30%', minWidth: 100} //minWidth：局部定义当前单元格的最小宽度，layui 2.2.1 新增
+                  ,{field:'transMoneyCount', width:80, title: '交易金额'}
+                  ,{field:'transDirectionDesc', width:80, title: '交易方向'}
+                  ,{field:'transStateDesc', title: '交易状态描述'} //minWidth：局部定义当前单元格的最小宽度，layui 2.2.1 新增
                   ,{field:'transState', title: '交易状态', sort: true}
-                  ,{field:'transSource', title: '交易来源', sort: true}
-                  ,{field:'createTime', title: '记录创建时间'}
+                  ,{field:'transType', title: '交易类型', sort: true}
+                  ,{field:'transSourceDesc', title: '交易来源', sort: true}
+                  ,{field:'createTime', title: '记录创建时间',sort:true}
                   ,{field:'createUser', width:137, title: '记录创建人', sort: true}
               ]]
           });

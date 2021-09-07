@@ -2,7 +2,12 @@ package com.mine.manager;
 
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
+import javafx.scene.input.DataFormat;
 import org.junit.jupiter.api.Test;
+
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class MyTest {
 
@@ -53,5 +58,12 @@ public class MyTest {
         jsonObject.append("data",totalRow);
 
         System.out.println(jsonObject);
+    }
+
+    @Test
+    public void test02() throws Exception{
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy/MM/dd hh:mm:hh");
+        Date parse = simpleDateFormat.parse("2021/9/5 17:11:22");
+        System.out.println(parse);
     }
 }

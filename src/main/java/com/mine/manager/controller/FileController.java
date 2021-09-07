@@ -1,9 +1,14 @@
 package com.mine.manager.controller;
 
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.poi.excel.ExcelReader;
 import cn.hutool.poi.excel.ExcelUtil;
+import com.alibaba.fastjson.JSON;
 import com.mine.manager.common.Response;
 import com.mine.manager.entity.TransDetail;
+import com.mine.manager.enums.TranSpecialTypeEnum;
+import com.mine.manager.rules.ItemNameRule;
+import com.mine.manager.rules.ObjNameRule;
 import com.mine.manager.service.BillService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,7 +18,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
-import java.math.BigDecimal;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -82,8 +88,11 @@ public class FileController {
 
         List<List<Object>> details = detailDataFromRequest(file);
 
-        Date curData = new Date();
+
         ArrayList<TransDetail> transDetails = new ArrayList<>();
+
+
+        Date curData = new Date();
 
         for (int i = 14; i < details.size(); i++) {
 
@@ -110,19 +119,22 @@ public class FileController {
                 }
                 transDetail.setTransItemName((String) rowData.get(3));
 
-                BigDecimal monycount;
+                Double monycount;
                 try {
-                    monycount = new BigDecimal(rowData.get(5).toString().replace("￥", ""));
+                    monycount = new Double(rowData.get(5).toString().replace("￥", ""));
                 } catch (Exception e) {
                     log.error("数据金额存在非法字符");
                     return new Response<>(500, "数据金额存在非法字符", "");
                 }
                 transDetail.setTransMoneyCount(monycount);
 
+                SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:hh");
+                transDetail.setTransDate(simpleDateFormat.parse(rowData.get(0).toString()));
+
                 transDetail.setTransDirection("支出".equals(rowData.get(4).toString().trim()) ? 0 : 1);
 
                 String tranState = (String) rowData.get(7);
-                transDetail.setTransState(sucState.contains(tranState) ? 1 : 0);
+                transDetail.setTransState(sucState.contains(tranState.trim()) ? 1 : 0);
                 transDetail.setTransStateDesc(tranState);
 
                 transDetail.setTransSource(1);
@@ -130,10 +142,13 @@ public class FileController {
                 transDetail.setCreateTime(curData);
                 transDetails.add(transDetail);
 
+
             }
+            log.info("当前账单信息:{}", JSON.toJSONString(transDetails));
         }
         //批量保存
         billService.saveBills(transDetails);
+        log.info("所有账单保存完毕，共计:{}条", transDetails.size());
         return new Response<>("success");
     }
 
@@ -142,7 +157,6 @@ public class FileController {
 
         List<List<Object>> details = detailDataFromRequest(file);
 
-        Date curData = new Date();
         ArrayList<TransDetail> transDetails = new ArrayList<>();
 
         for (int i = 4; i < details.size() - 7; i++) {
@@ -159,40 +173,21 @@ public class FileController {
                 }
 
             } else {
-
-                TransDetail transDetail = new TransDetail();
                 try {
-                    transDetail.setTransObjName((String) rowData.get(7));
+                    TransDetail transDetail = dealAlipayExcelData(rowData, transDetails);
+                    log.info("当前账单信息:{}", JSON.toJSONString(transDetail));
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    return new Response<>(500, e.getMessage(), "");
                 }
-                transDetail.setTransItemName((String) rowData.get(8));
-
-                BigDecimal monycount;
-                try {
-                    monycount = new BigDecimal(rowData.get(9).toString());
-                } catch (Exception e) {
-                    log.error("数据金额存在非法字符");
-                    return new Response<>(500, "数据金额存在非法字符", "");
-                }
-                transDetail.setTransMoneyCount(monycount);
-
-                transDetail.setTransDirection("支出".equals(rowData.get(10).toString().trim()) ? 0 : 1);
-
-                String tranState = (String) rowData.get(11);
-                transDetail.setTransState(sucState.contains(tranState) ? 1 : 0);
-                transDetail.setTransStateDesc(tranState);
-
-                transDetail.setTransSource(0);
-                transDetail.setCreateUser("system");
-                transDetail.setCreateTime(curData);
-                transDetails.add(transDetail);
             }
+
         }
         //批量保存
         billService.saveBills(transDetails);
+        log.info("所有账单保存完毕，共计:{}条", transDetails.size());
         return new Response<>("success");
     }
+
 
     /**
      * 从请求中获取excel文件
@@ -223,5 +218,80 @@ public class FileController {
             }
         }
         return true;
+    }
+
+    /**
+     * 处理支付宝账单行数据
+     *
+     * @param rowData      rowData
+     * @param transDetails transDeails
+     */
+    private TransDetail dealAlipayExcelData(List<Object> rowData, ArrayList<TransDetail> transDetails) {
+
+        Date curData = new Date();
+        TransDetail transDetail = new TransDetail();
+
+        try {
+            transDetail.setTransObjName(rowData.get(7).toString());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        transDetail.setTransItemName(rowData.get(8).toString());
+
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:hh");
+
+        String dataStr = rowData.get(3).toString();
+        if (StrUtil.isBlank(dataStr)) {
+            dataStr = rowData.get(2).toString();
+        }
+        try {
+            transDetail.setTransDate(simpleDateFormat.parse(dataStr));
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+
+        Double monycount;
+        try {
+            monycount = new Double(rowData.get(9).toString());
+        } catch (Exception e) {
+            log.error("数据金额存在非法字符");
+            throw new RuntimeException("数据金额存在非法字符");
+        }
+        transDetail.setTransMoneyCount(monycount);
+
+        transDetail.setTransDirection("支出".equals(rowData.get(10).toString().trim()) ? 0 : 1);
+
+        String tranState = (String) rowData.get(11);
+        transDetail.setTransState(sucState.contains(tranState.trim()) ? 1 : 0);
+        transDetail.setTransStateDesc(tranState);
+
+        transDetail.setTransSource(0);
+        transDetail.setCreateUser("system");
+        transDetail.setCreateTime(curData);
+
+        //放到最后
+        TranSpecialTypeEnum tranSpecialTypeEnum = dealSpecialTrans(transDetail);
+        transDetail.setTransType(tranSpecialTypeEnum.getCode());
+
+        transDetails.add(transDetail);
+        return transDetail;
+    }
+
+    /**
+     * 处理专项账单
+     */
+    private TranSpecialTypeEnum dealSpecialTrans(TransDetail transDetail) {
+
+        TranSpecialTypeEnum typeOfObjName = ObjNameRule.matchDetail(transDetail.getTransObjName());
+        if (typeOfObjName != null) {
+            return typeOfObjName;
+        }
+
+        TranSpecialTypeEnum typeOfItenName = ItemNameRule.matchDetail(transDetail.getTransItemName());
+        if (typeOfItenName != null) {
+            return typeOfItenName;
+        }
+
+        return TranSpecialTypeEnum.UNDEFAULT;
     }
 }

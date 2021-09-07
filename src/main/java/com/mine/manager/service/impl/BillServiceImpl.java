@@ -1,12 +1,12 @@
 package com.mine.manager.service.impl;
 
-import com.mine.manager.mapper.TransDetaiMapper;
+import com.baomidou.mybatisplus.mapper.EntityWrapper;
 import com.mine.manager.entity.TransDetail;
+import com.mine.manager.mapper.TransDetailMapper;
 import com.mine.manager.service.BillService;
+import org.apache.ibatis.session.RowBounds;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -15,37 +15,24 @@ import java.util.List;
 @Service
 public class BillServiceImpl implements BillService {
 
-    private final TransDetaiMapper transDetaiMapper;
+    private final TransDetailMapper transDetailMapper;
 
-    public BillServiceImpl(TransDetaiMapper transDetaiMapper) {
-        this.transDetaiMapper = transDetaiMapper;
-    }
-
-    @Override
-    public void dealBillDeail() {
-
-
-    }
-
-    @Override
-    public void saveBill(TransDetail transDetai) {
-        TransDetail t = new TransDetail();
-        t.setId(1L);
-        t.setCreateTime(new Date());
-        t.setCreateUser("system");
-        t.setTransState(1);
-        t.setTransDirection(1);
-        t.setTransMoneyCount(new BigDecimal(100));
-        t.setTransItemName("方便面");
-        t.setTransObjName("一个超时");
-        int insert = transDetaiMapper.insert(t);
-        System.out.println("save result" + insert);
+    public BillServiceImpl(TransDetailMapper transDetailMapper) {
+        this.transDetailMapper = transDetailMapper;
     }
 
     @Override
     public void saveBills(List<TransDetail> transDetails) {
         for (TransDetail transDetail : transDetails) {
-            transDetaiMapper.insert(transDetail);
+            transDetailMapper.insert(transDetail);
         }
     }
+
+    @Override
+    public List<TransDetail> list() {
+        EntityWrapper<TransDetail> wrapper = new EntityWrapper<>();
+        wrapper.setEntity(null);
+        return transDetailMapper.selectPage(new RowBounds(), wrapper);
+    }
+
 }

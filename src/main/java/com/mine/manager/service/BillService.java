@@ -10,20 +10,16 @@ import java.util.List;
 public interface BillService {
 
     /**
-     * 解析账单
-     */
-    void  dealBillDeail();
-
-    /**
-     * 保存单条账单
-     * @param transDetai 账单
-     */
-    void saveBill(TransDetail transDetai);
-
-    /**
      * 批量保存账单
      * @param transDetails 账单集合
      */
     void saveBills(List<TransDetail> transDetails);
+
+
+    /**
+     * 账单清单
+     * @return list
+     */
+    List<TransDetail> list();
 
 }
